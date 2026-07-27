@@ -111,7 +111,22 @@ export const DEFAULT_CONCURRENCY = Math.min(
 );
 
 export const MIN_CONCURRENCY = 1;
+
+/**
+ * 并发硬上限：**输入框不再限制**能填多少（也用不着与后台暗号 `&yyzb` 抢同一个输入框），
+ * 但调度器实际开的槽位一律 `min(填写值, 10)`。
+ *
+ * 为什么保留这个天花板：实测上游按账号近似串行，并发拉高不增吞吐，只会拉长
+ * 单条墙钟时间（并发 3 已出现 199.6s，逼近 210s 超时阈值），
+ * 再往上只会制造超时误判与重试风暴。
+ */
 export const MAX_CONCURRENCY = 10;
+
+/** 填写值 → 实际生效的并发槽位 */
+export function effectiveConcurrency(requested: number): number {
+  if (!Number.isFinite(requested)) return MIN_CONCURRENCY;
+  return Math.min(MAX_CONCURRENCY, Math.max(MIN_CONCURRENCY, Math.floor(requested)));
+}
 
 /** 一生三：每条提示词生成的份数选项 */
 export const VARIANT_CHOICES = [1, 3] as const;

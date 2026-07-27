@@ -1,12 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  MAX_CONCURRENCY,
-  MIN_CONCURRENCY,
-  TASK_TIMEOUT_MS,
-  type VariantCount,
-} from '@/lib/tasks';
+import { MAX_CONCURRENCY, TASK_TIMEOUT_MS, type VariantCount } from '@/lib/tasks';
 import type { InputMode } from '@/lib/prompt-text';
 import { cn } from '@/lib/utils';
 import { UserSelector } from './user-selector';
@@ -20,8 +15,15 @@ interface TopBarProps {
   batchId: string | null;
   mode: InputMode;
   variantCount: VariantCount;
+  /**
+   * 并发输入框的**原始文本**（受控）：不再限制只能填数字——
+   * 既要允许填超过上限的数（实际按 MAX_CONCURRENCY 执行），
+   * 也是隐藏后台暗号的入口（见 lib/admin.ts）。
+   */
+  concurrencyText: string;
+  onConcurrencyTextChange: (value: string) => void;
+  /** 解析后的填写值；> MAX_CONCURRENCY 时铅字条上标注实际执行值 */
   concurrency: number;
-  onConcurrencyChange: (value: number) => void;
 }
 
 type ServiceStatus = 'checking' | 'ok' | 'down' | 'unselected';
@@ -42,8 +44,9 @@ export function TopBar({
   batchId,
   mode,
   variantCount,
+  concurrencyText,
+  onConcurrencyTextChange,
   concurrency,
-  onConcurrencyChange,
 }: TopBarProps) {
   const [service, setService] = useState<ServiceStatus>('checking');
   /** 探活往返耗时，取代硬编码延迟；探测失败时为 null */
@@ -145,26 +148,24 @@ export function TopBar({
         <span>
           {mode === 'step' ? '分步生成' : '统一生成'} · 每条 {variantCount} 份
         </span>
-        <label className="flex items-center gap-1" title="同时在跑的任务数，1–10">
+        <label
+          className="flex items-center gap-1"
+          title={`同时在跑的任务数；可以填任意值，超过 ${MAX_CONCURRENCY} 时实际按 ${MAX_CONCURRENCY} 执行`}
+        >
           <span>并发</span>
           <input
-            type="number"
-            min={MIN_CONCURRENCY}
-            max={MAX_CONCURRENCY}
-            value={concurrency}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            spellCheck={false}
+            value={concurrencyText}
             aria-label="并发槽位"
-            onChange={(e) => {
-              const next = Number(e.target.value);
-              if (!Number.isFinite(next)) return;
-              onConcurrencyChange(
-                Math.min(
-                  MAX_CONCURRENCY,
-                  Math.max(MIN_CONCURRENCY, Math.round(next)),
-                ),
-              );
-            }}
-            className="w-6 border-b border-dotted border-rule-dash bg-transparent text-center tabular-nums text-foreground outline-none transition-colors hover:border-signal focus:border-signal"
+            onChange={(e) => onConcurrencyTextChange(e.target.value)}
+            className="w-12 border-b border-dotted border-rule-dash bg-transparent text-center tabular-nums text-foreground outline-none transition-colors hover:border-signal focus:border-signal"
           />
+          {concurrency > MAX_CONCURRENCY && (
+            <span className="text-quiet">· 实际按 {MAX_CONCURRENCY} 执行</span>
+          )}
           <span>· 单张无进展超时 {TIMEOUT_SECONDS}s</span>
         </label>
         <span className="ml-auto tabular-nums">{pressDate}</span>

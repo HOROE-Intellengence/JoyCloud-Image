@@ -7,6 +7,7 @@ import {
   TASK_TIMEOUT_MS,
   buildTasks,
   composeSinglePrompt,
+  effectiveConcurrency,
   isTaskActive,
   makeRunId,
   outputToTasks,
@@ -14,6 +15,7 @@ import {
   type LogEntry,
   type RunPhase,
 } from '@/lib/tasks';
+import type { UsageStatus } from '@/lib/admin';
 import type { WorkflowOutput } from '@/lib/workflow';
 
 /** 客户端流事件：上游事件 + 本服务在 /api/generate 注入的 meta 事件 */
@@ -135,6 +137,22 @@ export function useTaskRunner() {
     [syncTasks],
   );
 
+  /**
+   * 用量留痕：单张**终局**时给服务端账本记一笔（隐藏后台的统计数据源）。
+   * 只记成功与已耗尽重试的失败——自动重试中的中间态、以及用户中断都不算一张。
+   * 失败静默：账本写不进去也绝不能影响生成主链路。
+   */
+  const recordUsage = useCallback((prompt: string, status: UsageStatus) => {
+    const userId = userIdRef.current;
+    if (!userId) return;
+    void fetch('/api/usage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, prompt, status }),
+      keepalive: true,
+    }).catch(() => undefined);
+  }, []);
+
   /** 通知上游停止该 run，避免中断/超时后继续烧算力 */
   const cancelUpstream = useCallback(async (runId: string | null) => {
     if (!runId) return;
@@ -179,7 +197,8 @@ export function useTaskRunner() {
     if (!activeRef.current) return;
     const tasks = [...taskMapRef.current.values()];
     const running = tasks.filter((t) => t.status === 'running').length;
-    let slots = concurrencyRef.current - running;
+    // 填写值可以超过 10，实际开的槽位一律封顶（见 lib/tasks.ts 的 MAX_CONCURRENCY）
+    let slots = effectiveConcurrency(concurrencyRef.current) - running;
     if (slots > 0) {
       for (const id of orderRef.current) {
         if (slots <= 0) break;
@@ -376,6 +395,7 @@ export function useTaskRunner() {
             elapsedMs,
           });
           pushLog(`${label} 生成成功 · ${secs}s`, 'ok');
+          recordUsage(latest.prompt, 'success');
           pump();
           return;
         }
@@ -426,11 +446,21 @@ export function useTaskRunner() {
             elapsedMs,
           });
           pushLog(`${label} 失败 · ${message}`, 'err');
+          recordUsage(latest.prompt, 'failed');
         }
         pump();
       })();
     },
-    [cancelUpstream, clearTaskTimer, consumeStream, pump, pushLog, syncTasks, updateTask],
+    [
+      cancelUpstream,
+      clearTaskTimer,
+      consumeStream,
+      pump,
+      pushLog,
+      recordUsage,
+      syncTasks,
+      updateTask,
+    ],
   );
 
   // pump 通过 ref 间接调用 runTask，打断两者的循环依赖
@@ -469,7 +499,11 @@ export function useTaskRunner() {
           {
             id: 0,
             time: nowLabel(),
-            text: `批次启动 · ${prompts.length} 条提示词 × ${variantCount} 份 = ${tasks.length} 个任务 · 并发 ${concurrencyRef.current} · 单张无进展超时 ${Math.round(TASK_TIMEOUT_MS / 1000)}s`,
+            text: `批次启动 · ${prompts.length} 条提示词 × ${variantCount} 份 = ${tasks.length} 个任务 · 并发 ${effectiveConcurrency(concurrencyRef.current)}${
+              concurrencyRef.current > effectiveConcurrency(concurrencyRef.current)
+                ? `（填写 ${concurrencyRef.current}，按上限执行）`
+                : ''
+            } · 单张无进展超时 ${Math.round(TASK_TIMEOUT_MS / 1000)}s`,
             tone: 'amber',
           },
         ],

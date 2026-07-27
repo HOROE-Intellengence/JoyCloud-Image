@@ -21,12 +21,17 @@ import {
   type InputMode,
 } from '@/lib/prompt-text';
 import {
+  DEFAULT_CONCURRENCY,
+  MIN_CONCURRENCY,
   isVariantCount,
   tasksToOutput,
   type PreviewImage,
   type VariantCount,
 } from '@/lib/tasks';
+import { isAdminCode } from '@/lib/admin';
 import { DEFAULT_USER_ID, WORKFLOW_USERS, isValidUserId } from '@/lib/users';
+import { cn } from '@/lib/utils';
+import { AdminPanel } from './admin-panel';
 import { TopBar } from './top-bar';
 import { UserBadge } from './user-selector';
 import { PromptPanel } from './prompt-panel';
@@ -61,6 +66,11 @@ export function Console() {
 
   const [userId, setUserId] = useState<string>(DEFAULT_USER_ID);
   const [identityPromptOpen, setIdentityPromptOpen] = useState(false);
+  /** 并发输入框的原始文本：可以填超过上限的数，也是隐藏后台的入口 */
+  const [concurrencyText, setConcurrencyText] = useState(
+    String(DEFAULT_CONCURRENCY),
+  );
+  const [adminOpen, setAdminOpen] = useState(false);
   const [splitFallback, setSplitFallback] = useState<{
     reason: string;
     text: string;
@@ -100,6 +110,20 @@ export function Console() {
       // ignore
     }
   }, []);
+
+  /**
+   * 并发框改动：前端不再设上限（超过 10 由调度器按 10 执行），
+   * 非数字文本（暗号）保留在框里但不动调度器。
+   */
+  const handleConcurrencyTextChange = useCallback(
+    (raw: string) => {
+      setConcurrencyText(raw);
+      const next = Number(raw.trim());
+      if (!Number.isFinite(next) || next < MIN_CONCURRENCY) return;
+      setConcurrency(Math.floor(next));
+    },
+    [setConcurrency],
+  );
 
   const handleVariantChange = useCallback((next: VariantCount) => {
     setVariantCount(next);
@@ -201,13 +225,20 @@ export function Console() {
   );
 
   const handleStart = useCallback(() => {
+    // 后台暗号：并发框里键入暗号后再点生成 = 开后台，这一次点击不派发任何任务。
+    // 放在身份守卫之前——进后台是看账，与用谁的 key 无关。
+    if (isAdminCode(concurrencyText)) {
+      setConcurrencyText(String(concurrency));
+      setAdminOpen(true);
+      return;
+    }
     // 强制身份守卫：上游对无 Token 请求直接 401，没有可用的兜底链路
     if (!userId) {
       setIdentityPromptOpen(true);
       return;
     }
     void runWith(userId);
-  }, [userId, runWith]);
+  }, [concurrencyText, concurrency, userId, runWith]);
 
   /** 弹窗内选人：记住选择并立即以该身份开始生成 */
   const handlePickUser = useCallback(
@@ -272,12 +303,12 @@ export function Console() {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
         e.preventDefault();
-        if (!active) handleStart();
+        if (!active && !adminOpen) handleStart();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [handleStart, active]);
+  }, [handleStart, active, adminOpen]);
 
   return (
     <div className="min-h-dvh bg-background px-5 pb-[60px] text-foreground lg:px-10">
@@ -288,8 +319,9 @@ export function Console() {
         batchId={state.batchId}
         mode={mode}
         variantCount={variantCount}
+        concurrencyText={concurrencyText}
+        onConcurrencyTextChange={handleConcurrencyTextChange}
         concurrency={concurrency}
-        onConcurrencyChange={setConcurrency}
       />
 
       <div className="grid items-start gap-10 pt-[30px] lg:grid-cols-[400px_minmax(0,1fr)] lg:gap-14">
@@ -343,26 +375,35 @@ export function Console() {
 
       <Lightbox image={expanded} onClose={() => setExpanded(null)} />
 
+      {/* 隐藏后台：无独立路由/子域名，暗号触发后整页覆盖 */}
+      <AdminPanel open={adminOpen} onClose={() => setAdminOpen(false)} />
+
       {/* 未选择用户：强制拦截（上游无 Token 直接 401，无兜底链路） */}
       <AlertDialog open={identityPromptOpen} onOpenChange={setIdentityPromptOpen}>
         <AlertDialogContent className="rounded-sm border-foreground bg-raised sm:max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-sans text-[15px]">
-              请先选择操作员
+              请选择员工身份
             </AlertDialogTitle>
             <AlertDialogDescription className="text-[13px] leading-relaxed">
-              生成前必须选择用户，系统会用该用户的密钥调用工作流；
-              未选择用户时上游直接拒绝请求（401），无法生成。
-              选择后将立即以该身份开始生成。
+              生成前必须选择身份，系统会用该身份的密钥调用工作流；
+              未选择时上游直接拒绝请求（401），无法生成。
+              没有单独密钥的同事选「其他员工」。选择后将立即以该身份开始生成。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="grid grid-cols-2 gap-2 py-1">
-            {WORKFLOW_USERS.map((user) => (
+            {WORKFLOW_USERS.map((user, idx) => (
               <button
                 key={user.id}
                 type="button"
                 onClick={() => handlePickUser(user.id)}
-                className="flex items-center gap-2 rounded-sm border border-rule bg-paper px-3 py-2 text-sm text-foreground transition-colors hover:border-signal hover:bg-teal-wash hover:text-teal-deep"
+                className={cn(
+                  'flex items-center gap-2 rounded-sm border border-rule bg-paper px-3 py-2 text-sm text-foreground transition-colors hover:border-signal hover:bg-teal-wash hover:text-teal-deep',
+                  // 奇数个身份时最后一个占满整行，不留半格空位
+                  idx === WORKFLOW_USERS.length - 1 &&
+                    WORKFLOW_USERS.length % 2 === 1 &&
+                    'col-span-2',
+                )}
               >
                 <UserBadge user={user} />
                 {user.name}

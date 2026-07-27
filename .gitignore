@@ -53,6 +53,9 @@ output.log
 *.log.*
 logs/
 
+# 用量账本（运行时数据，见 AGENTS.md「用量账本」）
+data/usage.jsonl
+
 # 视频文件
 *.mp4
 *.avi

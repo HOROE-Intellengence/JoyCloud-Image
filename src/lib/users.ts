@@ -13,10 +13,12 @@ export const WORKFLOW_USERS: WorkflowUser[] = [
   { id: 'siying', name: '思颖' },
   { id: 'baozheng', name: '包正' },
   { id: 'jianxi', name: '健曦' },
+  /** 未单独分配密钥的同事共用少威的 key（映射见 user-tokens.ts），用量仍按本 id 单独计入后台统计 */
+  { id: 'other', name: '其他员工' },
 ];
 
 /** 未选择用户时选择器展示的占位文案 */
-export const USER_PLACEHOLDER = '请选择用户';
+export const USER_PLACEHOLDER = '选择用户身份';
 
 /**
  * 默认用户：空串表示「未选择」。

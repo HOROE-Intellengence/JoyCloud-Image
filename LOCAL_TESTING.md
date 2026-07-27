@@ -70,11 +70,13 @@ Mock 返回的是内联 SVG 的 `data:` URL，无需外网即可在页面上真�
 
 ## 验收清单
 
-### 1. 用户选择（强制）
+### 1. 身份选择（强制）
 
-1. 清掉 localStorage 后打开页面 → 右上角显示「请选择用户」（信号蓝高亮），状态灯 `NO USER`
-2. 填一条提示词，点「开始批量生成」→ 弹出「请先选择用户」，**不发起任何请求**
-3. 弹窗内点任一用户 → 记住选择并立即以该身份开始生成
+1. 清掉 localStorage 后打开页面 → 右上角显示「选择用户身份」（洋红待办描边）
+2. 填一条提示词，点「开始批量生成」→ 弹出「请选择员工身份」，列出五个身份，**不发起任何请求**
+3. 弹窗内点任一身份 → 记住选择并立即以该身份开始生成
+4. 选「其他员工」跑一张 → mock 侧鉴权通过（它共用少威的 key），
+   但 `data/usage.jsonl` 里这条的 `userId` 是 `other`，后台统计与少威分开计
 
 > 为什么是强制：真实上游对无 Bearer Token 的请求直接 401
 > （`curl https://yunyue-image2.coze.site/health` → `401 Missing authorization header`），
@@ -134,7 +136,41 @@ mock 日志里每次超时都有一条对应的 `cancel`（超时不会把上游
 
 拆分不可用时会弹窗询问是否「本地分条继续」，不静默降级。
 
-### 6. 真实上游冒烟
+### 6. 并发不设前端上限、实际封顶 10
+
+顶栏并发框是纯文本输入。填 `25` → 铅字条右侧补出「· 实际按 10 执行」；
+点生成后批次首条日志为「并发 10（填写 25，按上限执行）」，mock 侧同一毫秒最多 10 条 `stream_run`。
+填空/填字母不会崩，只是保持上一个有效值。
+
+### 7. 隐藏后台（用量总账）
+
+1. 在**并发框**键入暗号 `&yyzb`（大小写与前后空格都认），再点一次「开始批量生成」
+2. 预期：整页覆盖出「用量总账」，并发框恢复成原来的数字，**mock 侧不应出现任何新的 `stream_run`**——这一次点击不生成
+3. 面板内容：汇总（派发/成功/失败/合计消费）、身份筛选、每日折线、各身份用量表、提示词流水
+4. 点某个身份 → 汇总数、折线、流水三处同时跟着筛；折线上鼠标扫过读出当天数字
+5. Esc 或「返回工作台」退出，工作台状态原样保留
+
+账本落在 `data/usage.jsonl`（可用 `USAGE_LOG_PATH` 改位置），一行一条 JSON：
+
+```bash
+cat workflow/projects/data/usage.jsonl
+```
+
+清账直接删这个文件。造几天历史数据方便看折线：
+
+```bash
+node -e "const fs=require('fs');const now=Date.now();const l=[];for(let d=6;d>=1;d--)for(let i=0;i<3;i++)l.push(JSON.stringify({ts:now-d*86400000+i*3600000,userId:['shaowei','siying','other'][i],prompt:'历史样张 '+d,status:i===2?'failed':'success'}));fs.appendFileSync('data/usage.jsonl',l.join('\n')+'\n')"
+```
+
+接口本身也可以直接验：
+
+```bash
+curl -s "http://localhost:5000/api/usage?code=%26yyzb"
+```
+
+无 `code` 或 code 不对一律 403；`POST /api/usage` 对非法 `user_id` / `status` 一律 400。
+
+### 8. 真实上游冒烟
 
 注释掉 `.env.local` 里的两个 `WORKFLOW_*_BASE_URL`（回落真实域名）后重启，用 1–2 条短提示词跑一次。
 单张约 55s。**别用真实上游跑一生三或大批量**，很慢且消耗额度。
