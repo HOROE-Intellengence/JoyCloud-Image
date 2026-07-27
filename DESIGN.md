@@ -45,7 +45,14 @@
 
 ### 字体
 
-- **正文与数据：衬线** `Source Serif 4`（Google Fonts，`globals.css` 顶部 `@import`），回落 Georgia / 宋体
+- **正文与数据：衬线** `Source Serif 4`，**自托管**：woff2 收在 `src/app/fonts/`，
+  由 `layout.tsx` 的 `next/font/local` 出字并挂 `--font-source-serif` 到 `<html>`，
+  `globals.css` 的 `--font-serif` 引用它后再回落 Georgia / 中文衬线栈
+  - **不要改回 Google Fonts 的远程 `@import`**：那会被 Next 的 CSS 管道整条剥离，
+    构建产物里不会有任何 gstatic 引用，页面静默回落到 Georgia/宋体（这个坑踩过一次）；
+    `next/font/google` 也不合适——要求构建机能出网到 gstatic，国内构建不稳
+  - Source Serif 4 **没有中文字形**，只作用于拉丁字母与数字（编号、计时、批次号、钢印），
+    中文一律由 `Songti SC / Noto Serif CJK SC / Source Han Serif SC / serif` 接住
 - **顶栏与弹窗标题：无衬线** `Helvetica Neue` + 系统中文栈（`font-sans`）——工单抬头用无衬线，正文用衬线
 - **结局钢印与运行日志：等宽** `ui-monospace, Menlo…`（`font-mono`），只给 `TIMEOUT` / `FAILED` / `CANCELLED` 与日志行
 - 一切数字（编号、计时、计数、延迟、批次号）加 `tabular-nums`，跨行对齐
