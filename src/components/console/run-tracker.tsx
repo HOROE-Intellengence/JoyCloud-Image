@@ -1,16 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, Download, RotateCcw, Square, Terminal } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  MAX_CONCURRENCY,
-  MIN_CONCURRENCY,
-  TASK_TIMEOUT_MS,
-  type ImageTask,
-  type LogEntry,
-  type RunPhase,
-} from '@/lib/tasks';
+import { formatMinSec } from '@/lib/format';
+import type { ImageTask, LogEntry, RunPhase } from '@/lib/tasks';
 import { cn } from '@/lib/utils';
 
 export interface TaskCounts {
@@ -36,36 +28,19 @@ export function countTasks(tasks: ImageTask[]): TaskCounts {
 interface RunTrackerProps {
   phase: RunPhase;
   counts: TaskCounts;
-  sourceCount: number;
-  variantCount: number;
   elapsedMs: number;
   logs: LogEntry[];
-  concurrency: number;
-  onConcurrencyChange: (value: number) => void;
-  onCancelAll: () => void;
   onRetryAllFailed: () => void;
   onDownloadAll: () => void;
   downloadingAll: boolean;
   downloadProgress: { done: number; total: number } | null;
 }
 
-function formatElapsed(ms: number): string {
-  const totalSeconds = ms / 1000;
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = (totalSeconds % 60).toFixed(1).padStart(4, '0');
-  return minutes > 0 ? `${minutes}:${seconds}` : `${seconds}s`;
-}
-
 export function RunTracker({
   phase,
   counts,
-  sourceCount,
-  variantCount,
   elapsedMs,
   logs,
-  concurrency,
-  onConcurrencyChange,
-  onCancelAll,
   onRetryAllFailed,
   onDownloadAll,
   downloadingAll,
@@ -78,179 +53,121 @@ export function RunTracker({
     counts.total > 0 ? Math.round((settled / counts.total) * 100) : 0;
   const retryable = counts.failed + counts.cancelled;
 
+  // 预计剩余：用已落地任务的平均墙钟时间推算，样本不足或已收工时不显示
+  const remainingMs =
+    active && settled > 0 && settled < counts.total
+      ? (elapsedMs / settled) * (counts.total - settled)
+      : null;
+
   return (
-    <section className="border-b border-border bg-panel">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
-        {/* 批次构成 */}
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[11px] font-medium tracking-[0.14em] text-faint">
-            TASKS
-          </span>
-          <span className="rounded-sm border border-border bg-background px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
-            {sourceCount} 条 × {variantCount} 份 = {counts.total}
-          </span>
-        </div>
-
-        {/* 进度条 */}
-        <div className="flex min-w-[140px] flex-1 items-center gap-2">
-          <div className="h-1.5 min-w-[80px] flex-1 overflow-hidden rounded-sm bg-muted">
-            <div
-              className="h-full bg-signal transition-[width] duration-300 ease-out"
-              style={{ width: `${progress}%` }}
+    <section>
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+        <div>
+          <h2 className="m-0 mb-1.5 text-[19px] font-semibold">
+            本批次 · {counts.total > 0 ? `${counts.total} 张` : '尚未进料'}
+          </h2>
+          <div className="flex flex-wrap items-baseline gap-x-[18px] gap-y-1 text-sm tabular-nums text-muted-foreground">
+            <Count value={counts.succeeded} label="成功" tone="text-foreground" />
+            <Count value={counts.running} label="生成中" tone="text-signal" />
+            <Count
+              value={counts.queued}
+              label="排队"
+              tone="text-muted-foreground"
             />
+            <Count value={counts.failed} label="失败" tone="text-rose" />
+            <Count value={counts.cancelled} label="中断" tone="text-quiet" />
           </div>
-          <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
-            {settled}/{counts.total}
-          </span>
         </div>
 
-        <Stat label="成功" value={counts.succeeded} tone="text-success" />
-        <Stat
-          label="失败"
-          value={counts.failed}
-          tone={counts.failed > 0 ? 'text-destructive' : undefined}
-        />
-        {counts.cancelled > 0 && (
-          <Stat label="中断" value={counts.cancelled} tone="text-faint" />
-        )}
-        <Stat label="生成中" value={counts.running} tone="text-signal" />
-        <Stat label="排队" value={counts.queued} />
-
-        {elapsedMs > 0 && (
-          <span
-            className={cn(
-              'font-mono text-[13px] tabular-nums',
-              active ? 'text-signal' : 'text-muted-foreground',
-            )}
-          >
-            {formatElapsed(elapsedMs)}
-          </span>
-        )}
-
-        <div className="ml-auto flex items-center gap-2">
-          {/* 并发槽位 */}
-          <label className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1">
-            <span className="text-[11px] text-faint">并发</span>
-            <input
-              type="number"
-              min={MIN_CONCURRENCY}
-              max={MAX_CONCURRENCY}
-              value={concurrency}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                if (!Number.isFinite(next)) return;
-                onConcurrencyChange(
-                  Math.min(MAX_CONCURRENCY, Math.max(MIN_CONCURRENCY, Math.round(next))),
-                );
-              }}
-              className="w-8 bg-transparent text-center font-mono text-[11px] text-foreground outline-none"
-            />
-          </label>
-
-          <span
-            className="rounded-md border border-border bg-background px-2 py-1 font-mono text-[11px] text-faint"
-            title="单张连续无上游进展事件超过该时长即判卡死，中断并自动重试（ping 心跳不算进展）"
-          >
-            无进展超时 {Math.round(TASK_TIMEOUT_MS / 1000)}s
-          </span>
-
-          {active && (
-            <button
-              type="button"
-              onClick={onCancelAll}
-              className="flex h-7 items-center gap-1.5 rounded-md border border-destructive/40 px-2.5 text-[11px] text-destructive transition-colors hover:bg-destructive/10"
-            >
-              <Square className="size-2.5 fill-current" />
-              取消批次
-            </button>
-          )}
-
-          {retryable > 0 && (
-            <button
-              type="button"
-              onClick={onRetryAllFailed}
-              className="flex h-7 items-center gap-1.5 rounded-md border border-destructive/40 px-2.5 text-[11px] text-destructive transition-colors hover:bg-destructive/10"
-            >
-              <RotateCcw className="size-3" />
-              重试全部未完成 ({retryable})
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={onDownloadAll}
-            disabled={downloadingAll || counts.succeeded === 0}
-            className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-[11px] text-foreground transition-colors hover:border-signal/60 hover:text-signal disabled:opacity-50"
-          >
-            <Download className="size-3" />
-            {downloadingAll && downloadProgress
-              ? `下载中 ${downloadProgress.done}/${downloadProgress.total}`
-              : `全部下载 (${counts.succeeded})`}
-          </button>
-
+        <div className="flex shrink-0 flex-wrap items-center gap-5 whitespace-nowrap text-sm">
           <button
             type="button"
             onClick={() => setShowLogs((v) => !v)}
             className={cn(
-              'flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 font-mono text-[11px] transition-colors',
-              showLogs ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+              'bg-transparent transition-colors hover:text-rose',
+              showLogs ? 'text-foreground' : 'text-teal-deep',
             )}
           >
-            <Terminal className="size-3" />
-            日志
-            <ChevronDown
-              className={cn('size-3 transition-transform', showLogs && 'rotate-180')}
-            />
+            运行日志
+          </button>
+          {retryable > 0 && (
+            <button
+              type="button"
+              onClick={onRetryAllFailed}
+              className="bg-transparent text-teal-deep transition-colors hover:text-rose"
+            >
+              重试全部失败
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onDownloadAll}
+            disabled={downloadingAll || counts.succeeded === 0}
+            className="rounded-sm border border-foreground bg-transparent px-4 py-[7px] text-foreground transition-colors hover:bg-foreground hover:text-paper disabled:cursor-not-allowed disabled:border-rule-dash disabled:text-rule-dash disabled:hover:bg-transparent disabled:hover:text-rule-dash"
+          >
+            {downloadingAll && downloadProgress
+              ? `下载中 ${downloadProgress.done}/${downloadProgress.total}`
+              : '全部下载'}
           </button>
         </div>
       </div>
 
+      <div className="relative mt-3.5 h-0.5 overflow-hidden bg-rule-soft">
+        <div
+          className={cn(
+            'absolute inset-y-0 left-0 bg-signal transition-[width] duration-300 ease-out',
+            active && 'press-stripe',
+          )}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <div className="flex justify-between gap-4 pt-1.5 text-xs uppercase tracking-[0.1em] tabular-nums text-quiet">
+        <span>已完成 {progress}%</span>
+        <span>
+          已耗时 {formatMinSec(elapsedMs)}
+          {remainingMs !== null && ` · 预计剩余 ${formatMinSec(remainingMs)}`}
+        </span>
+      </div>
+
       {showLogs && (
-        <div className="border-t border-border">
-          <ScrollArea className="h-[160px]">
-            <div className="flex flex-col gap-0.5 px-4 py-2 font-mono text-[11px]">
-              {logs.length === 0 ? (
-                <span className="text-faint">等待运行…</span>
-              ) : (
-                logs.map((log) => (
-                  <div key={log.id} className="flex gap-2 leading-5">
-                    <span className="shrink-0 text-faint">{log.time}</span>
-                    <span
-                      className={cn(
-                        log.tone === 'ok' && 'text-success',
-                        log.tone === 'err' && 'text-destructive',
-                        log.tone === 'amber' && 'text-signal',
-                        log.tone === 'info' && 'text-muted-foreground',
-                      )}
-                    >
-                      {log.text}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          </ScrollArea>
+        <div className="mt-4 max-h-56 overflow-y-auto rounded-sm bg-sunk px-[18px] py-3.5 font-mono text-xs leading-[1.9] text-muted-foreground">
+          {logs.length === 0 ? (
+            <div className="text-faint">等待运行…</div>
+          ) : (
+            logs.map((log) => (
+              <div key={log.id}>
+                <span className="text-quiet">{log.time}</span>
+                {' · '}
+                <span
+                  className={cn(
+                    log.tone === 'ok' && 'text-teal-deep',
+                    log.tone === 'err' && 'text-rose-deep',
+                    log.tone === 'amber' && 'text-signal',
+                  )}
+                >
+                  {log.text}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       )}
     </section>
   );
 }
 
-function Stat({
-  label,
+function Count({
   value,
+  label,
   tone,
 }: {
-  label: string;
   value: number;
-  tone?: string;
+  label: string;
+  tone: string;
 }) {
   return (
-    <div className="flex items-baseline gap-1.5">
-      <span className="text-[11px] text-faint">{label}</span>
-      <span className={cn('font-mono text-[13px] tabular-nums', tone ?? 'text-foreground')}>
-        {value}
-      </span>
-    </div>
+    <span>
+      <span className={tone}>{value}</span> {label}
+    </span>
   );
 }

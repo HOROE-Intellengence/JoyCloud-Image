@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { ImageOff, Layers, Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   taskLabel,
   type ImageTask,
@@ -42,48 +41,52 @@ export function TaskGrid({
     return () => clearInterval(timer);
   }, [hasRunning]);
 
+  /** 每张排队卡前面还压着几张，按展示顺序数 */
+  const queueAhead = useMemo(() => {
+    const ahead: number[] = [];
+    let seen = 0;
+    for (const task of tasks) {
+      if (task.status === 'queued') {
+        ahead.push(seen);
+        seen += 1;
+      } else {
+        ahead.push(0);
+      }
+    }
+    return ahead;
+  }, [tasks]);
+
   if (phase === 'splitting') {
     return (
-      <Centered>
-        <Loader2 className="size-5 animate-spin text-signal" />
-        <p className="text-[13px] text-muted-foreground">正在调用拆分 AI 分条…</p>
-        <p className="text-[11px] text-faint">
-          拆分完成后按条派发独立任务，每张可单独超时重试与中断
-        </p>
-      </Centered>
+      <Notice
+        heading="正在调用拆分模型分条"
+        detail="拆分完成后按条派发独立任务，每张可单独超时重试与中断。"
+        pulse
+      />
     );
   }
 
   if (tasks.length === 0) {
     if (phase === 'cancelled') {
       return (
-        <Centered>
-          <ImageOff className="size-5 text-faint" />
-          <p className="text-[13px] text-muted-foreground">批次已取消</p>
-          <p className="text-[11px] text-faint">修改提示词后可重新发起生成</p>
-        </Centered>
+        <Notice
+          heading="批次已取消"
+          detail="修改左侧提示词后可重新发起生成。"
+        />
       );
     }
     return (
-      <div className="flex flex-1 items-center justify-center p-6">
-        <div className="flex w-full max-w-md flex-col items-center gap-3 rounded-md border border-dashed border-border px-6 py-14 text-center">
-          <div className="flex size-10 items-center justify-center rounded-md border border-border bg-background">
-            <Layers className="size-4.5 text-faint" />
-          </div>
-          <p className="text-[13px] text-muted-foreground">等待生产任务</p>
-          <p className="max-w-[300px] text-[11px] leading-relaxed text-faint">
-            在左侧填写提示词后开始生成。每条提示词会派发为一个独立任务，
-            支持单张超时自动重试、单张手动重试与单点中断。
-          </p>
-        </div>
-      </div>
+      <Notice
+        heading="等待进料"
+        detail="在左侧写下提示词后开始生成。每条提示词派发为一个独立任务，支持单张超时自动重试、手动重试与单点中断。"
+      />
     );
   }
 
   return (
     <div
       key={runToken}
-      className="grid flex-1 content-start grid-cols-2 gap-3 p-4 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+      className="mt-[26px] grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-6"
     >
       {tasks.map((task, i) => (
         <TaskCard
@@ -97,6 +100,7 @@ export function TaskGrid({
           )}
           staggerIndex={i}
           now={now}
+          queueAhead={queueAhead[i]}
           onExpand={onExpand}
           onRetry={onRetry}
           onCancel={onCancelTask}
@@ -106,10 +110,27 @@ export function TaskGrid({
   );
 }
 
-function Centered({ children }: { children: React.ReactNode }) {
+/** 空态/中间态：虚线框内一句状态与一句指引，不放假图 */
+function Notice({
+  heading,
+  detail,
+  pulse,
+}: {
+  heading: string;
+  detail: string;
+  pulse?: boolean;
+}) {
   return (
-    <div className="flex flex-1 items-center justify-center p-6">
-      <div className="flex flex-col items-center gap-2 text-center">{children}</div>
+    <div className="mt-[26px] rounded-sm border border-dashed border-rule-dash px-8 py-16 text-center">
+      <div className="flex items-center justify-center gap-2.5">
+        {pulse && (
+          <span className="size-[7px] rounded-full bg-signal animate-ink-pulse" />
+        )}
+        <span className="text-[17px] text-muted-foreground">{heading}</span>
+      </div>
+      <p className="mx-auto mt-2 max-w-[420px] text-[13px] leading-relaxed text-faint">
+        {detail}
+      </p>
     </div>
   );
 }

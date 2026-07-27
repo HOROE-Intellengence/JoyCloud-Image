@@ -34,16 +34,16 @@
 │   │   │   ├── split/route.ts      # POST：拆分探针——只借上游拆分 AI 分条，拿到结果立即 cancel
 │   │   │   ├── cancel/route.ts     # POST：代理上游 /cancel/{run_id}
 │   │   │   └── health/route.ts     # GET：聚合健康检查（无 user_id 直接返回 unselected，不探上游）
-│   │   ├── globals.css             # 商务浅色主题 Tokens（见 DESIGN.md）
+│   │   ├── globals.css             # 活字印刷主题 Tokens + halftone / ink-pulse / press-run（见 DESIGN.md）
 │   │   ├── layout.tsx
 │   │   └── page.tsx                # 首页 = <Console />
 │   ├── components/
 │   │   ├── console/                # 业务组件
 │   │   │   ├── console.tsx         # 主装配：输入状态、用户守卫弹窗、批次编排、下载、历史归档
-│   │   │   ├── top-bar.tsx         # 顶栏：品牌、服务状态灯、用户选择
-│   │   │   ├── user-selector.tsx   # 用户下拉（未选中时信号蓝高亮）+ 可复用的 UserBadge
+│   │   │   ├── top-bar.tsx         # 顶栏：字标、上游状态灯与实测延迟、用户选择 + 铅字条（批次号/模式/可改并发/超时/日期）
+│   │   │   ├── user-selector.tsx   # 用户下拉（未选中时洋红待办描边）+ 可复用的 UserBadge
 │   │   │   ├── prompt-panel.tsx    # 左栏（受控）：分步/统一双模式输入、一生三份数、示例模板、历史
-│   │   │   ├── run-tracker.tsx     # 批次进度条 + 计数 + 并发/超时展示 + 批量操作 + 日志面板
+│   │   │   ├── run-tracker.tsx     # 批次抬头：五态计数 + 进度条 + 已耗时/预计剩余 + 批量操作 + 日志面板
 │   │   │   ├── task-grid.tsx       # 任务网格 + 空态；统一驱动倒计时时钟
 │   │   │   ├── task-card.tsx       # 单任务卡片（排队/生成中含倒计时/成功/失败/中断 五态）
 │   │   │   └── lightbox.tsx        # 大图预览 Dialog
@@ -134,3 +134,6 @@
 
 - 模板默认预装核心组件库 `shadcn/ui`，位于`src/components/ui/`目录下
 - Next.js 项目**必须默认**采用 shadcn/ui 组件、风格和规范，**除非用户指定用其他的组件和规范。**
+- 本项目已由 `云悦控制台.dc.html` 指定了活字印刷视觉规范（见 DESIGN.md）：
+  结构性/无障碍组件（AlertDialog、Dialog、DropdownMenu）仍走 shadcn 并由 `globals.css` 的 Token 统一改色；
+  分段控件、卡片、进度条、文字按钮等按 DESIGN.md 手写——**不要给控制台加回图标或 shadcn 默认圆角**

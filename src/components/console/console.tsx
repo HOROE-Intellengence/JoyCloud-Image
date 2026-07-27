@@ -11,7 +11,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTaskRunner } from '@/hooks/use-task-runner';
 import { useRunHistory, type RunHistoryEntry } from '@/hooks/use-run-history';
 import { downloadFile, safeFileName } from '@/lib/format';
@@ -281,56 +280,64 @@ export function Console() {
   }, [handleStart, active]);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
-      <TopBar active={active} userId={userId} onUserChange={handleUserChange} />
+    <div className="min-h-dvh bg-background px-5 pb-[60px] text-foreground lg:px-10">
+      <TopBar
+        active={active}
+        userId={userId}
+        onUserChange={handleUserChange}
+        batchId={state.batchId}
+        mode={mode}
+        variantCount={variantCount}
+        concurrency={concurrency}
+        onConcurrencyChange={setConcurrency}
+      />
 
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <PromptPanel
-          mode={mode}
-          onModeChange={setMode}
-          items={items}
-          onItemsChange={setItems}
-          unifiedText={unifiedText}
-          onUnifiedTextChange={setUnifiedText}
-          variantCount={variantCount}
-          onVariantCountChange={handleVariantChange}
-          phase={state.phase}
-          onStart={handleStart}
-          onCancel={cancelAll}
-          onApplyTemplate={applyExternalText}
-          history={history}
-          onSelectHistory={handleSelectHistory}
-          onClearHistory={clearHistory}
-        />
+      <div className="grid items-start gap-10 pt-[30px] lg:grid-cols-[400px_minmax(0,1fr)] lg:gap-14">
+        <aside className="lg:sticky lg:top-6">
+          <PromptPanel
+            mode={mode}
+            onModeChange={setMode}
+            items={items}
+            onItemsChange={setItems}
+            unifiedText={unifiedText}
+            onUnifiedTextChange={setUnifiedText}
+            variantCount={variantCount}
+            onVariantCountChange={handleVariantChange}
+            phase={state.phase}
+            onStart={handleStart}
+            onCancel={cancelAll}
+            onApplyTemplate={applyExternalText}
+            history={history}
+            onSelectHistory={handleSelectHistory}
+            onClearHistory={clearHistory}
+          />
+        </aside>
 
-        <main className="flex min-h-0 flex-1 flex-col">
+        <main>
           <RunTracker
             phase={state.phase}
             counts={counts}
-            sourceCount={state.sourceCount}
-            variantCount={state.variantCount}
             elapsedMs={elapsedMs}
             logs={state.logs}
-            concurrency={concurrency}
-            onConcurrencyChange={setConcurrency}
-            onCancelAll={cancelAll}
             onRetryAllFailed={retryAllFailed}
             onDownloadAll={handleDownloadAll}
             downloadingAll={downloadingAll}
             downloadProgress={downloadProgress}
           />
 
-          <ScrollArea className="min-h-0 flex-1">
-            <TaskGrid
-              phase={state.phase}
-              tasks={state.tasks}
-              variantCount={state.variantCount}
-              runToken={runToken}
-              onExpand={setExpanded}
-              onRetry={retryTask}
-              onCancelTask={cancelTask}
-            />
-          </ScrollArea>
+          <TaskGrid
+            phase={state.phase}
+            tasks={state.tasks}
+            variantCount={state.variantCount}
+            runToken={runToken}
+            onExpand={setExpanded}
+            onRetry={retryTask}
+            onCancelTask={cancelTask}
+          />
+
+          <p className="mt-7 text-[13px] italic text-quiet">
+            成功卡片悬停即出下载、复制链接、放大与重新生成；中断与重试均可逆，不再二次确认。
+          </p>
         </main>
       </div>
 
@@ -338,13 +345,15 @@ export function Console() {
 
       {/* 未选择用户：强制拦截（上游无 Token 直接 401，无兜底链路） */}
       <AlertDialog open={identityPromptOpen} onOpenChange={setIdentityPromptOpen}>
-        <AlertDialogContent className="sm:max-w-sm">
+        <AlertDialogContent className="rounded-sm border-foreground bg-raised sm:max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-sm">请先选择用户</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs leading-relaxed">
+            <AlertDialogTitle className="font-sans text-[15px]">
+              请先选择操作员
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[13px] leading-relaxed">
               生成前必须选择用户，系统会用该用户的密钥调用工作流；
               未选择用户时上游直接拒绝请求（401），无法生成。
-              选择后将立即以该用户身份开始生成。
+              选择后将立即以该身份开始生成。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="grid grid-cols-2 gap-2 py-1">
@@ -353,7 +362,7 @@ export function Console() {
                 key={user.id}
                 type="button"
                 onClick={() => handlePickUser(user.id)}
-                className="flex h-9 items-center gap-2 rounded-md border border-border bg-background px-2.5 text-xs text-foreground transition-colors hover:border-signal/60 hover:bg-signal/[0.06] hover:text-signal"
+                className="flex items-center gap-2 rounded-sm border border-rule bg-paper px-3 py-2 text-sm text-foreground transition-colors hover:border-signal hover:bg-teal-wash hover:text-teal-deep"
               >
                 <UserBadge user={user} />
                 {user.name}
@@ -361,7 +370,9 @@ export function Console() {
             ))}
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel className="h-8 text-xs">稍后再说</AlertDialogCancel>
+            <AlertDialogCancel className="h-8 rounded-sm text-[13px]">
+              稍后再说
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -371,20 +382,24 @@ export function Console() {
         open={splitFallback !== null}
         onOpenChange={(open) => !open && setSplitFallback(null)}
       >
-        <AlertDialogContent className="sm:max-w-sm">
+        <AlertDialogContent className="rounded-sm border-foreground bg-raised sm:max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-sm">拆分 AI 暂不可用</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs leading-relaxed">
+            <AlertDialogTitle className="font-sans text-[15px]">
+              拆分模型暂不可用
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[13px] leading-relaxed">
               {splitFallback?.reason}
               <br />
               可改用本地规则分条（按编号，其次按空行）继续生成，
-              分条准确度低于拆分 AI；也可以取消后改用分步模式逐条填写。
+              分条准确度低于拆分模型；也可以取消后改用分步模式逐条填写。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="h-8 text-xs">取消</AlertDialogCancel>
+            <AlertDialogCancel className="h-8 rounded-sm text-[13px]">
+              取消
+            </AlertDialogCancel>
             <AlertDialogAction
-              className="h-8 text-xs"
+              className="h-8 rounded-sm text-[13px]"
               onClick={handleSplitFallbackConfirm}
             >
               本地分条继续
@@ -395,16 +410,20 @@ export function Console() {
 
       {/* 批量下载：浏览器多文件下载权限提示 */}
       <AlertDialog open={downloadTipOpen} onOpenChange={setDownloadTipOpen}>
-        <AlertDialogContent className="sm:max-w-sm">
+        <AlertDialogContent className="rounded-sm border-foreground bg-raised sm:max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-sm">批量下载已开始</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs leading-relaxed">
+            <AlertDialogTitle className="font-sans text-[15px]">
+              批量下载已开始
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[13px] leading-relaxed">
               浏览器可能拦截多文件下载。如下载无法进行，请检查页面左上角地址栏的站点权限，
               允许「自动下载多个文件」后重试。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction className="h-8 text-xs">知道了</AlertDialogAction>
+            <AlertDialogAction className="h-8 rounded-sm text-[13px]">
+              知道了
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -1,19 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  AlertTriangle,
-  Check,
-  Copy,
-  Download,
-  Loader2,
-  Maximize2,
-  RotateCcw,
-  Square,
-  TimerOff,
-} from 'lucide-react';
 import { TASK_TIMEOUT_MS, type ImageTask, type PreviewImage } from '@/lib/tasks';
-import { downloadFile } from '@/lib/format';
+import { downloadFile, formatMinSec } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 interface TaskCardProps {
@@ -24,6 +13,8 @@ interface TaskCardProps {
   staggerIndex: number;
   /** 由上层统一驱动的时钟，用于倒计时（避免每张卡各起一个定时器） */
   now: number;
+  /** 排队卡片显示「队列前方 N 张」 */
+  queueAhead: number;
   onExpand: (image: PreviewImage) => void;
   onRetry: (id: string) => void;
   onCancel: (id: string) => void;
@@ -37,6 +28,7 @@ export function TaskCard({
   fileName,
   staggerIndex,
   now,
+  queueAhead,
   onExpand,
   onRetry,
   onCancel,
@@ -68,29 +60,29 @@ export function TaskCard({
     }
   };
 
-  const entranceStyle = { animationDelay: `${Math.min(staggerIndex, 24) * 40}ms` };
-
-  // ── 排队中 ──────────────────────────────────────────────
+  // ── 排队中 / 等待重试 ────────────────────────────────────
   if (task.status === 'queued') {
+    const waitingRetry = task.attempt > 0;
     return (
-      <Shell label={label} tone="idle">
-        <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground">
-          {task.prompt}
-        </p>
-        <div className="mt-auto flex flex-col gap-2">
-          <span className="font-mono text-[11px] text-faint">
-            {task.attempt > 0 ? `等待重试 · 第 ${task.attempt + 1} 次` : '排队中'}
-          </span>
-          <CardButton tone="neutral" onClick={() => onCancel(task.id)}>
-            <Square className="size-3" />
-            移出队列
-          </CardButton>
-        </div>
+      <Shell tone="idle" prompt={task.prompt}>
+        <Slug tone="quiet">{label}</Slug>
+        <Status
+          heading={waitingRetry ? '等待重试' : '排队中'}
+          headingTone="text-muted-foreground"
+          detail={
+            waitingRetry
+              ? `第 ${task.attempt + 1} 次 · 等待重新入列`
+              : queueAhead > 0
+                ? `队列前方 ${queueAhead} 张`
+                : '等待并发槽位'
+          }
+        />
+        <GhostAction onClick={() => onCancel(task.id)}>移出队列</GhostAction>
       </Shell>
     );
   }
 
-  // ── 生成中（含单张超时倒计时 + 单点中断）────────────────────
+  // ── 生成中（含单张无进展倒计时 + 单点中断）──────────────────
   if (task.status === 'running') {
     const elapsed = task.startedAt ? Math.max(0, now - task.startedAt) : 0;
     // 超时口径是「无进展时长」：每来一个上游进展事件就重新计时
@@ -98,219 +90,243 @@ export function TaskCard({
       ? Math.max(0, now - task.lastProgressAt)
       : elapsed;
     const remaining = Math.max(0, TASK_TIMEOUT_MS - sinceProgress);
-    const remainingSec = Math.ceil(remaining / 1000);
     const progress = Math.min(100, (sinceProgress / TASK_TIMEOUT_MS) * 100);
     const nearTimeout = remaining < TASK_TIMEOUT_MS * 0.15;
 
     return (
-      <Shell label={label} tone="running">
-        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-          {task.prompt}
-        </p>
-        <div className="mt-auto flex flex-col gap-2">
-          <div className="flex items-baseline justify-between font-mono text-[11px]">
-            <span className="text-signal">
-              已耗时 {(elapsed / 1000).toFixed(0)}s
-            </span>
-            <span
-              className={nearTimeout ? 'text-destructive' : 'text-faint'}
-              title="距上一个上游进展事件的剩余判定时间；每收到新事件即重新计时"
-            >
-              无进展 {remainingSec}s
-            </span>
-          </div>
-          <div className="h-1 w-full overflow-hidden rounded-sm bg-muted">
+      <Shell tone="running" prompt={task.prompt}>
+        <div className="flex items-center justify-between gap-2">
+          <Slug tone="signal">{label}</Slug>
+          <span className="size-[7px] shrink-0 rounded-full bg-signal animate-ink-pulse" />
+        </div>
+        <Status
+          heading="生成中"
+          headingTone="text-teal-deep"
+          detail={`已耗时 ${formatMinSec(elapsed)} · 无进展剩余 ${formatMinSec(remaining)} · 第 ${task.attempt}/${task.maxAttempts} 次`}
+        />
+        <div>
+          <div
+            className={cn(
+              'relative h-0.5 overflow-hidden',
+              nearTimeout ? 'bg-rose-tint' : 'bg-teal-tint',
+            )}
+          >
             <div
               className={cn(
-                'h-full transition-[width] duration-500 ease-linear',
-                nearTimeout ? 'bg-destructive' : 'bg-signal',
+                'absolute inset-y-0 left-0 transition-[width] duration-500 ease-linear',
+                nearTimeout ? 'bg-rose' : 'bg-signal',
               )}
               style={{ width: `${progress}%` }}
             />
           </div>
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] text-faint">
-              第 {task.attempt}/{task.maxAttempts} 次
-            </span>
-            <button
-              type="button"
-              onClick={() => onCancel(task.id)}
-              className="flex h-6 items-center gap-1 rounded-sm border border-destructive/40 px-2 text-[11px] text-destructive transition-colors hover:bg-destructive/10"
-            >
-              <Square className="size-2.5 fill-current" />
-              中断此张
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => onCancel(task.id)}
+            className="mt-[11px] bg-transparent text-[13px] text-muted-foreground transition-colors hover:text-rose"
+          >
+            中断此张
+          </button>
         </div>
       </Shell>
     );
   }
 
-  // ── 失败 / 已中断 ────────────────────────────────────────
-  if (task.status === 'failed' || task.status === 'cancelled') {
-    const isCancelled = task.status === 'cancelled';
+  // ── 已中断 ──────────────────────────────────────────────
+  if (task.status === 'cancelled') {
+    return (
+      <Shell tone="idle" prompt={task.prompt}>
+        <div className="flex items-center justify-between gap-2">
+          <Slug tone="quiet">{label}</Slug>
+          <Stamp tone="text-faint">CANCELLED</Stamp>
+        </div>
+        <Status
+          heading="已中断"
+          headingTone="text-muted-foreground"
+          detail="由操作员手动停止"
+        />
+        <GhostAction tone="teal" onClick={() => onRetry(task.id)}>
+          继续生成
+        </GhostAction>
+      </Shell>
+    );
+  }
+
+  // ── 失败（超时 / 上游拒绝）────────────────────────────────
+  if (task.status === 'failed') {
     const isTimeout = task.failureKind === 'timeout';
     return (
-      <Shell label={label} tone={isCancelled ? 'idle' : 'failed'}>
-        <div className="flex items-center gap-1 font-mono text-[10px]">
-          {isTimeout ? (
-            <TimerOff className="size-3 text-destructive" />
-          ) : (
-            <AlertTriangle
-              className={cn(
-                'size-3',
-                isCancelled ? 'text-faint' : 'text-destructive',
-              )}
-            />
-          )}
-          <span className={isCancelled ? 'text-faint' : 'text-destructive'}>
-            {isCancelled ? 'CANCELLED' : isTimeout ? 'TIMEOUT' : 'FAILED'}
-          </span>
+      <Shell tone="failed" prompt={task.prompt}>
+        <div className="flex items-center justify-between gap-2">
+          <Slug tone="rose">{label}</Slug>
+          <Stamp tone="text-rose-deep">{isTimeout ? 'TIMEOUT' : 'FAILED'}</Stamp>
         </div>
-        <p className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-muted-foreground">
-          {task.prompt}
-        </p>
-        <p
-          className={cn(
-            'mt-1 line-clamp-2 text-[10px] leading-relaxed',
-            isCancelled ? 'text-faint' : 'text-destructive/80',
-          )}
+        <Status
+          heading={isTimeout ? '超时未出图' : '上游拒绝'}
+          headingTone="text-rose-deep"
+          detail={
+            isTimeout
+              ? `上游 ${TIMEOUT_SECONDS}s 内无任何进展，已试 ${task.attempt}/${task.maxAttempts} 次。`
+              : task.error || '生成失败，可改写提示词后重试。'
+          }
+        />
+        <button
+          type="button"
+          onClick={() => onRetry(task.id)}
+          className="self-start rounded-sm border border-rose bg-transparent px-3 py-[5px] text-[13px] text-rose-deep transition-colors hover:bg-rose hover:text-white"
         >
-          {task.error || '生成失败'}
-        </p>
-        <div className="mt-auto pt-2">
-          <CardButton tone="danger" onClick={() => onRetry(task.id)}>
-            <RotateCcw className="size-3" />
-            {isCancelled ? '继续生成' : '重试此张'}
-          </CardButton>
-        </div>
+          重试此张
+        </button>
       </Shell>
     );
   }
 
-  // ── 成功 ────────────────────────────────────────────────
+  // ── 成功：满铺样张 + 左上墨块编号 + 悬停操作层 ───────────────
   return (
-    <div
-      style={entranceStyle}
-      className="group relative aspect-square animate-card-in overflow-hidden rounded-md border border-border bg-muted"
+    <figure
+      style={{ animationDelay: `${Math.min(staggerIndex, 24) * 40}ms` }}
+      className="group relative m-0 aspect-square animate-card-in overflow-hidden rounded-sm bg-sunk"
     >
-      {!loaded && <div className="absolute inset-0 shimmer-bg" />}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={task.url}
-        alt={task.prompt}
-        loading="lazy"
-        onLoad={() => setLoaded(true)}
-        className={cn(
-          'absolute inset-0 size-full object-cover transition-opacity duration-300',
-          loaded ? 'opacity-100' : 'opacity-0',
-        )}
-      />
+      {/* 半调层自带 position:relative，用 size-full 撑满 figure，不能再叠 absolute */}
+      <div className="halftone size-full">
+        {!loaded && <div className="absolute inset-0 shimmer-bg" />}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={task.url}
+          alt={task.prompt}
+          loading="lazy"
+          onLoad={() => setLoaded(true)}
+          className={cn(
+            'absolute inset-0 size-full object-cover transition-opacity duration-300',
+            loaded ? 'opacity-100' : 'opacity-0',
+          )}
+        />
+      </div>
 
-      <span className="absolute left-2 top-2 rounded-sm bg-black/60 px-1.5 py-0.5 font-mono text-[10px] text-white/90 backdrop-blur-sm">
+      <figcaption className="pointer-events-none absolute left-0 top-0 bg-foreground px-[9px] py-1 text-xs tracking-[0.06em] tabular-nums text-paper">
         {label}
-      </span>
+      </figcaption>
 
-      <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/85 via-black/30 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-        <div className="flex flex-col gap-2 p-2.5">
-          <p className="line-clamp-2 text-[11px] leading-relaxed text-white/90">
+      <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-foreground/95 via-foreground/45 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        <div className="flex flex-col gap-2 p-3">
+          <p className="line-clamp-2 text-xs leading-relaxed text-paper/85">
             {task.prompt}
           </p>
-          <div className="flex items-center gap-1">
-            <CardAction
-              label="下载"
-              onClick={handleDownload}
-              disabled={downloading}
-            >
-              {downloading ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Download className="size-3.5" />
-              )}
-            </CardAction>
-            <CardAction label="复制链接" onClick={handleCopy}>
-              {copied ? (
-                <Check className="size-3.5 text-success" />
-              ) : (
-                <Copy className="size-3.5" />
-              )}
-            </CardAction>
-            <CardAction
-              label="放大"
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Chip onClick={handleDownload} disabled={downloading}>
+              {downloading ? '下载中' : '下载'}
+            </Chip>
+            <Chip onClick={handleCopy}>{copied ? '已复制' : '复制链接'}</Chip>
+            <Chip
               onClick={() =>
-                onExpand({
-                  url: task.url,
-                  prompt: task.prompt,
-                  label,
-                  fileName,
-                })
+                onExpand({ url: task.url, prompt: task.prompt, label, fileName })
               }
             >
-              <Maximize2 className="size-3.5" />
-            </CardAction>
-            <CardAction label="重新生成" onClick={() => onRetry(task.id)}>
-              <RotateCcw className="size-3.5" />
-            </CardAction>
+              放大
+            </Chip>
+            <Chip onClick={() => onRetry(task.id)}>重新生成</Chip>
             {task.elapsedMs > 0 && (
-              <span className="ml-auto font-mono text-[10px] text-white/70">
-                {(task.elapsedMs / 1000).toFixed(0)}s
+              <span className="ml-auto text-[11px] tabular-nums text-paper/60">
+                {(task.elapsedMs / 1000).toFixed(1)}s
               </span>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </figure>
   );
 }
 
-/** 非成功态的卡片外壳：统一编号角标与边框语义 */
+/** 非成功态的卡片外壳：三段式（编号 / 状态 / 动作），靠边框语义区分 */
 function Shell({
-  label,
   tone,
+  prompt,
   children,
 }: {
-  label: string;
   tone: 'idle' | 'running' | 'failed';
+  prompt: string;
   children: React.ReactNode;
 }) {
   return (
     <div
+      title={prompt}
       className={cn(
-        'flex aspect-square flex-col rounded-md border p-3',
-        tone === 'running' && 'border-signal/50 bg-signal/[0.04]',
-        tone === 'failed' && 'border-destructive/40 bg-destructive/[0.04]',
-        tone === 'idle' && 'border-dashed border-border bg-background',
+        'flex aspect-square flex-col justify-between gap-3 rounded-sm border p-3.5',
+        tone === 'running' && 'border-signal bg-raised',
+        tone === 'failed' && 'border-rose bg-rose-wash',
+        tone === 'idle' && 'border-dashed border-rule-dash bg-transparent',
       )}
     >
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] text-faint">{label}</span>
-        {tone === 'running' && (
-          <span className="size-1.5 rounded-full bg-signal animate-signal-pulse" />
-        )}
-      </div>
-      <div className="mt-2 flex min-h-0 flex-1 flex-col">{children}</div>
+      {children}
     </div>
   );
 }
 
-function CardButton({
+/** 卡片编号：小字铅字条 */
+function Slug({
+  tone,
+  children,
+}: {
+  tone: 'quiet' | 'signal' | 'rose';
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className={cn(
+        'text-xs tracking-[0.06em] tabular-nums',
+        tone === 'quiet' && 'text-quiet',
+        tone === 'signal' && 'text-teal-deep',
+        tone === 'rose' && 'text-rose-deep',
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** 结局钢印：等宽大写标记 */
+function Stamp({ tone, children }: { tone: string; children: React.ReactNode }) {
+  return (
+    <span className={cn('font-mono text-[11px] tracking-[0.1em]', tone)}>
+      {children}
+    </span>
+  );
+}
+
+function Status({
+  heading,
+  headingTone,
+  detail,
+}: {
+  heading: string;
+  headingTone: string;
+  detail: string;
+}) {
+  return (
+    <div>
+      <div className={cn('text-[17px]', headingTone)}>{heading}</div>
+      <div className="mt-0.5 text-[13px] leading-[1.5] tabular-nums text-muted-foreground">
+        {detail}
+      </div>
+    </div>
+  );
+}
+
+function GhostAction({
   children,
   onClick,
   tone,
 }: {
   children: React.ReactNode;
   onClick: () => void;
-  tone: 'neutral' | 'danger';
+  tone?: 'teal';
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        'flex h-7 w-full items-center justify-center gap-1.5 rounded-sm border text-[11px] transition-colors',
-        tone === 'danger'
-          ? 'border-destructive/40 text-destructive hover:bg-destructive/10'
-          : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground',
+        'self-start bg-transparent text-[13px] transition-colors hover:text-rose',
+        tone === 'teal' ? 'text-teal-deep' : 'text-muted-foreground',
       )}
     >
       {children}
@@ -318,25 +334,22 @@ function CardButton({
   );
 }
 
-function CardAction({
+/** 悬停操作层上的动作：墨底纸字的小铅块 */
+function Chip({
   children,
-  label,
   onClick,
   disabled,
 }: {
   children: React.ReactNode;
-  label: string;
   onClick: () => void;
   disabled?: boolean;
 }) {
   return (
     <button
       type="button"
-      title={label}
-      aria-label={label}
       onClick={onClick}
       disabled={disabled}
-      className="flex size-7 items-center justify-center rounded-sm bg-white/10 text-white/90 backdrop-blur-sm transition-colors hover:bg-signal hover:text-signal-foreground disabled:opacity-50"
+      className="rounded-sm border border-paper/35 bg-transparent px-2 py-[3px] text-[11px] text-paper/90 transition-colors hover:border-signal hover:bg-signal hover:text-white disabled:opacity-50"
     >
       {children}
     </button>

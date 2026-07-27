@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -41,64 +42,97 @@
   --color-panel: var(--panel);
   --color-elevated: var(--elevated);
   --color-faint: var(--faint);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
+
+  /* 活字印刷补充色阶：纸面层次、分割线三档、印墨青与洋红 */
+  --color-paper: var(--background);
+  --color-raised: var(--raised);
+  --color-sunk: var(--sunk);
+  --color-quiet: var(--quiet);
+  --color-rule: var(--rule);
+  --color-rule-soft: var(--rule-soft);
+  --color-rule-dash: var(--rule-dash);
+  --color-teal-deep: var(--teal-deep);
+  --color-teal-tint: var(--teal-tint);
+  --color-teal-wash: var(--teal-wash);
+  --color-rose: var(--destructive);
+  --color-rose-deep: var(--rose-deep);
+  --color-rose-tint: var(--rose-tint);
+  --color-rose-wash: var(--rose-wash);
+
+  /* 圆角一律 2px：铅字与压印没有胶囊 */
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 3px;
+  --radius-2xl: 3px;
   --font-sans:
-    'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    Roboto, 'Helvetica Neue', Arial, sans-serif;
+    'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --font-serif:
+    'Source Serif 4', 'Source Serif Pro', Georgia, 'Songti SC',
+    'Noto Serif CJK SC', serif;
   --font-mono:
-    ui-monospace, 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas,
-    'Liberation Mono', 'Courier New', monospace;
+    ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
   --animate-card-in: card-in 0.28s ease-out both;
-  --animate-signal-pulse: signal-pulse 1.6s ease-in-out infinite;
+  --animate-ink-pulse: ink-pulse 1.6s ease-in-out infinite;
+  --animate-press-run: press-run 0.9s linear infinite;
   --animate-shimmer: shimmer 1.8s linear infinite;
 }
 
 :root {
-  --radius: 0.5rem;
+  --radius: 2px;
 
-  /* 云悦资本图像生成 JoyCloud Image 主题：企业蓝 + 纸面灰 */
-  --background: #f5f6f8;
-  --foreground: #1c2128;
-  --card: #fff;
-  --card-foreground: #1c2128;
-  --popover: #fff;
-  --popover-foreground: #1c2128;
-  --primary: #2563eb;
+  /* 云悦工作台 JoyCloud Image Press：纸灰底 + 墨黑字 + 印墨青 + 校样洋红 */
+  --background: #f3f2f2;
+  --foreground: #201e1d;
+  --raised: #fbfafa;
+  --sunk: #eae9e9;
+  --card: #fbfafa;
+  --card-foreground: #201e1d;
+  --popover: #fbfafa;
+  --popover-foreground: #201e1d;
+  --primary: #0088b0;
   --primary-foreground: #fff;
-  --secondary: #f0f2f5;
-  --secondary-foreground: #1c2128;
-  --muted: #eef0f3;
-  --muted-foreground: #59636e;
-  --accent: #f0f2f5;
-  --accent-foreground: #1c2128;
-  --destructive: #dc2626;
-  --border: #e4e7ec;
-  --input: #d8dde4;
-  --ring: #2563eb;
-  --signal: #2563eb;
+  --secondary: #eae9e9;
+  --secondary-foreground: #201e1d;
+  --muted: #eae9e9;
+  --muted-foreground: #605d5d;
+  --accent: #e9f8ff;
+  --accent-foreground: #006786;
+  --destructive: #d6006c;
+  --border: #d7d3d3;
+  --input: #d7d3d3;
+  --ring: #0088b0;
+  --signal: #0088b0;
   --signal-foreground: #fff;
-  --success: #16a34a;
-  --panel: #fff;
-  --elevated: #fff;
-  --faint: #98a2ae;
-  --chart-1: #2563eb;
-  --chart-2: #16a34a;
-  --chart-3: #59636e;
-  --chart-4: #dc2626;
-  --chart-5: #98a2ae;
-  --sidebar: #fff;
-  --sidebar-foreground: #1c2128;
-  --sidebar-primary: #2563eb;
+  --success: #006786;
+  --panel: #fbfafa;
+  --elevated: #fbfafa;
+  --quiet: #7d7979;
+  --faint: #9b9797;
+  --rule: #d7d3d3;
+  --rule-soft: #e0dddd;
+  --rule-dash: #bab6b6;
+  --teal-deep: #006786;
+  --teal-tint: #cbeeff;
+  --teal-wash: #e9f8ff;
+  --rose-deep: #aa0b56;
+  --rose-tint: #ffdee6;
+  --rose-wash: #fff1f4;
+  --chart-1: #0088b0;
+  --chart-2: #006786;
+  --chart-3: #605d5d;
+  --chart-4: #d6006c;
+  --chart-5: #9b9797;
+  --sidebar: #fbfafa;
+  --sidebar-foreground: #201e1d;
+  --sidebar-primary: #0088b0;
   --sidebar-primary-foreground: #fff;
-  --sidebar-accent: #f0f2f5;
-  --sidebar-accent-foreground: #1c2128;
-  --sidebar-border: #e4e7ec;
-  --sidebar-ring: #2563eb;
+  --sidebar-accent: #e9f8ff;
+  --sidebar-accent-foreground: #006786;
+  --sidebar-border: #d7d3d3;
+  --sidebar-ring: #0088b0;
 }
 
 @keyframes card-in {
@@ -112,15 +146,26 @@
   }
 }
 
-@keyframes signal-pulse {
+/* 运行中的信号点：像墨点被压下又抬起 */
+@keyframes ink-pulse {
   0%,
   100% {
     opacity: 1;
-    box-shadow: 0 0 0 0 rgb(37 99 235 / 40%);
+    transform: scale(1);
   }
   50% {
-    opacity: 0.6;
-    box-shadow: 0 0 0 5px rgb(37 99 235 / 0%);
+    opacity: 0.28;
+    transform: scale(0.8);
+  }
+}
+
+/* 印机走纸：进度条上的斜纹条持续推进 */
+@keyframes press-run {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 14px 0;
   }
 }
 
@@ -140,16 +185,27 @@
 
   html,
   body {
-    height: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
     background: var(--background);
     color: var(--foreground);
-    font-family: var(--font-sans);
+    font-family: var(--font-serif);
     -webkit-font-smoothing: antialiased;
   }
 
+  a {
+    color: var(--teal-deep);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--destructive);
+  }
+
   ::selection {
-    background: rgb(37 99 235 / 16%);
-    color: #1c2128;
+    background: var(--teal-tint);
+    color: var(--foreground);
   }
 
   ::-webkit-scrollbar {
@@ -158,13 +214,13 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #c9d0d9;
-    border: 3px solid #f5f6f8;
-    border-radius: 8px;
+    background: #c4c0c0;
+    border: 3px solid var(--background);
+    border-radius: 6px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #a9b3c0;
+    background: var(--quiet);
   }
 
   ::-webkit-scrollbar-track {
@@ -173,13 +229,39 @@
 }
 
 @layer utilities {
-  .shimmer-bg {
-    background: linear-gradient(
-      100deg,
-      #e9edf2 40%,
-      #f6f8fa 50%,
-      #e9edf2 60%
+  /* 成品图的网点半调：轻微去色 + 3px 网点乘算，像刚下印机的样张 */
+  .halftone {
+    position: relative;
+    filter: grayscale(0.35) contrast(1.15);
+  }
+
+  .halftone::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+      circle,
+      rgb(0 0 0 / 22%) 30%,
+      transparent 32%
     );
+    background-size: 3px 3px;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+
+  /* 批次进度条在跑时叠一层走纸斜纹 */
+  .press-stripe {
+    background-image: repeating-linear-gradient(
+      115deg,
+      rgb(255 255 255 / 26%) 0 3px,
+      transparent 3px 7px
+    );
+    background-size: 14px 100%;
+    animation: var(--animate-press-run);
+  }
+
+  .shimmer-bg {
+    background: linear-gradient(100deg, #e6e4e4 40%, #f6f5f5 50%, #e6e4e4 60%);
     background-size: 200% 100%;
     animation: var(--animate-shimmer);
   }

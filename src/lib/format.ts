@@ -9,6 +9,14 @@ export function formatDuration(ms: number): string {
   return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
 }
 
+/** 分:秒（`03:18`）。批次与单张的计时/倒计时统一用这个口径 */
+export function formatMinSec(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
 export function formatClock(timestamp: number): string {
   const d = new Date(timestamp);
   const pad = (n: number) => String(n).padStart(2, '0');

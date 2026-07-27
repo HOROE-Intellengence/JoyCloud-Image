@@ -1,6 +1,5 @@
 'use client';
 
-import { Check, ChevronDown, UserRound } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +12,7 @@ import { USER_PLACEHOLDER, WORKFLOW_USERS, type WorkflowUser } from '@/lib/users
 import { cn } from '@/lib/utils';
 
 interface UserSelectorProps {
-  /** 空串表示未选择用户，按钮显示占位文案「请选择用户」并高亮提示 */
+  /** 空串表示未选择用户，按钮显示占位文案「请选择用户」并走洋红待办描边 */
   userId: string;
   onChange: (userId: string) => void;
   disabled?: boolean;
@@ -29,10 +28,10 @@ export function UserBadge({
   return (
     <span
       className={cn(
-        'flex size-5 shrink-0 items-center justify-center rounded-sm border text-[11px]',
+        'flex size-5 shrink-0 items-center justify-center border text-[11px]',
         active
-          ? 'border-signal/50 bg-signal/15 text-signal'
-          : 'border-border bg-background text-muted-foreground',
+          ? 'border-signal bg-teal-wash text-teal-deep'
+          : 'border-rule bg-paper text-quiet',
       )}
     >
       {user.name.charAt(0)}
@@ -51,11 +50,15 @@ export function UserSelector({ userId, onChange, disabled }: UserSelectorProps) 
           disabled={disabled}
           data-unselected={current ? undefined : ''}
           className={cn(
-            'flex h-7 items-center gap-1.5 rounded-md border px-2 text-xs transition-colors',
+            'flex items-center gap-2.5 rounded-sm border bg-transparent px-3 pb-1.5 pt-[5px] font-sans text-[15px] transition-colors',
             current
-              ? 'border-border bg-background text-foreground'
-              : 'border-signal/60 bg-signal/[0.06] text-signal',
-            disabled ? 'cursor-not-allowed opacity-50' : 'hover:border-faint',
+              ? 'border-foreground text-foreground'
+              : 'border-rose text-rose-deep',
+            disabled
+              ? 'cursor-not-allowed opacity-50'
+              : current
+                ? 'hover:bg-sunk'
+                : 'hover:bg-rose-wash',
           )}
           title={
             current
@@ -63,31 +66,31 @@ export function UserSelector({ userId, onChange, disabled }: UserSelectorProps) 
               : '必须先选择用户，否则无法调用工作流'
           }
         >
-          <UserRound
-            className={cn('size-3.5', current ? 'text-faint' : 'text-signal')}
-          />
           <span>{current ? current.name : USER_PLACEHOLDER}</span>
-          <ChevronDown
-            className={cn('size-3', current ? 'text-faint' : 'text-signal')}
-          />
+          <span className="text-[11px] opacity-70">▾</span>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
-        <DropdownMenuLabel className="font-mono text-[10px] tracking-[0.12em] text-faint">
+      <DropdownMenuContent
+        align="end"
+        className="w-44 rounded-sm border-foreground bg-raised font-sans"
+      >
+        <DropdownMenuLabel className="text-[11px] font-normal tracking-[0.12em] text-quiet">
           运行用户 · 自动选 KEY
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="bg-rule" />
         {WORKFLOW_USERS.map((user) => {
           const active = current !== null && user.id === current.id;
           return (
             <DropdownMenuItem
               key={user.id}
               onSelect={() => onChange(user.id)}
-              className="flex items-center gap-2 text-xs"
+              className="flex items-center gap-2 rounded-sm text-[14px]"
             >
               <UserBadge user={user} active={active} />
-              <span className={cn(active && 'text-signal')}>{user.name}</span>
-              {active && <Check className="ml-auto size-3.5 text-signal" />}
+              <span className={cn(active && 'text-teal-deep')}>{user.name}</span>
+              {active && (
+                <span className="ml-auto text-[11px] text-teal-deep">当前</span>
+              )}
             </DropdownMenuItem>
           );
         })}

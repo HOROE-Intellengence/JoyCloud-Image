@@ -1,7 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Aperture } from 'lucide-react';
+import {
+  MAX_CONCURRENCY,
+  MIN_CONCURRENCY,
+  TASK_TIMEOUT_MS,
+  type VariantCount,
+} from '@/lib/tasks';
+import type { InputMode } from '@/lib/prompt-text';
+import { cn } from '@/lib/utils';
 import { UserSelector } from './user-selector';
 
 interface TopBarProps {
@@ -9,31 +16,72 @@ interface TopBarProps {
   active: boolean;
   userId: string;
   onUserChange: (userId: string) => void;
+  /** 铅字条：当前批次号，无批次时显示待进料 */
+  batchId: string | null;
+  mode: InputMode;
+  variantCount: VariantCount;
+  concurrency: number;
+  onConcurrencyChange: (value: number) => void;
 }
 
 type ServiceStatus = 'checking' | 'ok' | 'down' | 'unselected';
 
-export function TopBar({ active, userId, onUserChange }: TopBarProps) {
+const TIMEOUT_SECONDS = Math.round(TASK_TIMEOUT_MS / 1000);
+
+const STATUS_TEXT: Record<ServiceStatus, string> = {
+  checking: '正在探测上游',
+  ok: '上游服务正常',
+  down: '上游服务异常',
+  unselected: '未选择用户',
+};
+
+export function TopBar({
+  active,
+  userId,
+  onUserChange,
+  batchId,
+  mode,
+  variantCount,
+  concurrency,
+  onConcurrencyChange,
+}: TopBarProps) {
   const [service, setService] = useState<ServiceStatus>('checking');
+  /** 探活往返耗时，取代硬编码延迟；探测失败时为 null */
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  /** 出版日期在挂载后才渲染，避免服务端/客户端时区不一致导致 hydration 报错 */
+  const [pressDate, setPressDate] = useState('');
+
+  useEffect(() => {
+    const now = new Date();
+    setPressDate(
+      `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`,
+    );
+  }, []);
 
   useEffect(() => {
     // 未选择用户时不去探活：上游对无 Token 请求必然 401，探活结果没有参考价值
     if (!userId) {
       setService('unselected');
+      setLatencyMs(null);
       return;
     }
     let alive = true;
     setService('checking');
     const check = async () => {
+      const startedAt = performance.now();
       try {
         const resp = await fetch(
           `/api/health?user_id=${encodeURIComponent(userId)}`,
           { cache: 'no-store' },
         );
         const data = (await resp.json()) as { status?: string };
-        if (alive) setService(data.status === 'ok' ? 'ok' : 'down');
+        if (!alive) return;
+        setService(data.status === 'ok' ? 'ok' : 'down');
+        setLatencyMs(Math.round(performance.now() - startedAt));
       } catch {
-        if (alive) setService('down');
+        if (!alive) return;
+        setService('down');
+        setLatencyMs(null);
       }
     };
     check();
@@ -44,50 +92,85 @@ export function TopBar({ active, userId, onUserChange }: TopBarProps) {
     };
   }, [userId]);
 
+  const statusText = active ? '批次运行中' : STATUS_TEXT[service];
   const dotClass = active
-    ? 'bg-signal animate-signal-pulse'
+    ? 'bg-signal animate-ink-pulse'
     : service === 'ok'
-      ? 'bg-success'
+      ? 'bg-signal'
       : service === 'down'
-        ? 'bg-destructive'
-        : 'bg-faint';
-
-  const statusText = active
-    ? 'RUNNING'
-    : service === 'ok'
-      ? 'ONLINE'
-      : service === 'down'
-        ? 'OFFLINE'
-        : service === 'unselected'
-          ? 'NO USER'
-          : 'CHECKING';
+        ? 'bg-rose'
+        : service === 'checking'
+          ? 'bg-faint animate-ink-pulse'
+          : 'bg-faint';
 
   return (
-    <header className="flex h-[52px] shrink-0 items-center justify-between border-b border-border bg-panel px-4">
-      <div className="flex items-center gap-3">
-        <div className="flex size-7 items-center justify-center rounded-md bg-signal">
-          <Aperture className="size-4 text-signal-foreground" strokeWidth={2} />
-        </div>
-        <div className="flex items-baseline gap-2.5">
-          <span className="text-[15px] font-semibold tracking-[0.02em] text-foreground">
-            云悦资本图像生成
-          </span>
-          <span className="hidden font-mono text-xs tracking-[0.14em] text-muted-foreground sm:inline">
-            JoyCloud Image
-          </span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1">
-          <span className={`size-1.5 rounded-full ${dotClass}`} />
-          <span className="font-mono text-[11px] text-muted-foreground">
-            {statusText}
+    <header className="pt-[26px] font-sans">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-10 gap-y-3">
+        <div className="flex items-baseline gap-3.5">
+          <h1 className="m-0 text-2xl font-semibold leading-none tracking-[0.01em]">
+            云悦工作台
+          </h1>
+          <span className="text-[13px] tracking-[0.04em] text-quiet">
+            JoyCloud Image Press
           </span>
         </div>
 
-        <UserSelector userId={userId} onChange={onUserChange} />
+        <div className="flex items-center gap-7">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+            <span className={cn('size-[7px] rounded-full', dotClass)} />
+            <span>{statusText}</span>
+            {latencyMs !== null && (
+              <span className="tabular-nums text-quiet">
+                · 延迟 {latencyMs}ms
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <span className="text-xs tracking-[0.04em] text-quiet">操作员</span>
+            <UserSelector userId={userId} onChange={onUserChange} />
+          </div>
+        </div>
       </div>
+
+      <div className="mt-3.5 h-px bg-foreground" />
+
+      <div className="flex flex-wrap items-center gap-x-7 gap-y-1 py-2 text-xs tracking-[0.04em] text-muted-foreground">
+        <span>
+          批次{' '}
+          <span className="font-mono tabular-nums">
+            {batchId ?? '尚未进料'}
+          </span>
+        </span>
+        <span>
+          {mode === 'step' ? '分步生成' : '统一生成'} · 每条 {variantCount} 份
+        </span>
+        <label className="flex items-center gap-1" title="同时在跑的任务数，1–10">
+          <span>并发</span>
+          <input
+            type="number"
+            min={MIN_CONCURRENCY}
+            max={MAX_CONCURRENCY}
+            value={concurrency}
+            aria-label="并发槽位"
+            onChange={(e) => {
+              const next = Number(e.target.value);
+              if (!Number.isFinite(next)) return;
+              onConcurrencyChange(
+                Math.min(
+                  MAX_CONCURRENCY,
+                  Math.max(MIN_CONCURRENCY, Math.round(next)),
+                ),
+              );
+            }}
+            className="w-6 border-b border-dotted border-rule-dash bg-transparent text-center tabular-nums text-foreground outline-none transition-colors hover:border-signal focus:border-signal"
+          />
+          <span>· 单张无进展超时 {TIMEOUT_SECONDS}s</span>
+        </label>
+        <span className="ml-auto tabular-nums">{pressDate}</span>
+      </div>
+
+      <div className="h-px bg-rule" />
     </header>
   );
 }
