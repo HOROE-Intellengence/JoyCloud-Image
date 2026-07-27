@@ -1,0 +1,98 @@
+Create one premium 16:9 investor-pitch slide, 3840×2160, using a clean flat-vector style. White background with one very pale blue geometric area; no gradients, glassmorphism, photorealism, shadows, glow, textures or decorative circuitry. Use only deep navy, cyan-blue, light blue-gray and white. Strict grid, generous whitespace, crisp Chinese sans-serif typography.
+
+Place a small outlined logo placeholder at the top-left reading “卓谱微”.
+
+Set the main headline across the top in large bold type: “成熟设备已进场，全球首创3D方案开始卡位”. Use deep navy for “成熟设备已进场” and cyan-blue for “全球首创3D方案开始卡位”.
+
+Below it, place the subtitle in smaller blue-gray type: “从EFA与探针卡千万订单出发，切入内部缺陷、3D形貌与膜厚检测，目标成为全球第一的3D半导体质量控制装备平台”.
+
+Use one simple flat central illustration: a large side-view diagram of a four-layer stacked semiconductor chip. Draw it with solid rectangular layers, thin navy outlines and minimal internal details. Divide the diagram visually into two halves:
+
+- Left half in deep navy, labeled “成熟设备进场”, with three simple input lines labeled “EFA失效分析”, “探针卡测试” and “电性能测试”.
+- Right half in cyan-blue, labeled “首创3D卡位”, with one clean vertical scan line passing through the chip layers. Mark four buried defects using simple geometric symbols and the labels “空洞”, “裂纹”, “分层” and “键合界面”.
+
+Above the chip, place one thin outlined label reading “3D质量控制装备平台”. Do not add a data cloud or futuristic effects.
+
+Directly beneath the chip, place one bold horizontal arrow as the sole memory anchor. It reads: “成熟设备进场 → 首创3D卡位 → 全球第一”. Make this the strongest graphic element after the headline.
+
+Across the lower third, arrange three equal-width flat information columns separated only by thin vertical rules. No floating cards and no rounded containers.
+
+First column title: “时代与技术”  
+Body: “3D NAND、HBM、Chiplet把缺陷推入内部；FS606全球首创路线进入工程验证，FS V3推进形貌与膜厚工程交付”
+
+Second column title: “订单与落地”  
+Body: “EFA实现多套交付；探针卡首台Demo后释放6台、约1,000万元订单；2026H1合同额约2,800万—3,000万元”
+
+Third column title: “团队与出身”  
+Body: “技术源于复旦×滨松联合实验室；985院长与3D测量科学家拓展边界，光刻、三星、量检测及ATE/EDA老兵完成产业化”
+
+Place one concise closing line above the footer in bold deep navy: “卓谱微不是在复制一台旧设备，而是在争夺3D半导体时代的新定义权。”
+
+At the bottom edge, add the small low-contrast footnote: “全球首创指FS606内部3D缺陷检测技术路线；FS系列仍处工程验证与交付推进阶段”.
+
+Flat editorial infographic aesthetic, visually calm and spacious. No equipment renders, portraits, icons, 3D perspective, transparent materials, light beams, technical dashboards or multiple visual effects. Render all Chinese text and numbers exactly as specified, without translation, paraphrasing or additional copy.
+A premium 16:9 investor-pitch presentation slide, 3840×2160, using a traditional flat card-based corporate layout with Apple-keynote restraint and McKinsey-grade structure. Bright white background with a very subtle pale-blue gradient, faint semiconductor circuit lines occupying less than 15% of the canvas, generous whitespace, no 3D rendering, no glassmorphism, no dramatic glow and no complex technical illustration.
+Place a small flat outlined brand placeholder at the top-left containing the exact Chinese text “卓谱微”; do not invent a real logo.
+Across the upper section, place the exact headline in large, extra-bold modern Chinese sans-serif type: “成熟设备已进场，全球首创3D方案开始卡位”. Keep “成熟设备已进场” in deep navy and highlight only “全球首创3D方案” with a restrained cyan-blue underline.
+Directly beneath it, place the exact subtitle in medium blue-gray type: “从EFA与探针卡千万订单出发，切入内部缺陷、3D形貌与膜厚检测，目标成为全球第一的3D半导体质量控制装备平台”.
+At the upper-right, add only a subtle flat line-art icon of a stacked semiconductor chip with one scanning beam and one buried defect marker. Keep it small and low contrast; it is a category cue, not the visual focus.
+Build the main content as a clean 2×2 grid of four equal-sized flat cards. Use white card surfaces, 1-pixel pale-blue borders, slightly rounded corners, no heavy shadows, consistent internal padding and strict alignment. Each card has a small numbered cyan tab, one simple flat navy icon, a bold title and concise body copy.
+Top-left card:
+Number tab reads “01”.
+Title reads “3D窗口”.
+Body reads “3D NAND、HBM、Chiplet把缺陷从表面推入内部，检测设备标准与供应商名单正在重置。FS606以全球首创内部3D缺陷检测路线抢占新品类。”
+Use a minimal stacked-chip icon with a small internal defect marker.
+Top-right card:
+Number tab reads “02”.
+Title reads “商业验证”.
+Body reads “EFA实现多套交付；探针卡首台Demo后释放6台、约1,000万元订单；2026H1合同额约2,800万—3,000万元。”
+Use a minimal purchase-order icon. Emphasize only “1台Demo → 6台订单” using heavier deep-navy type inside one restrained pale-blue highlight strip; do not make it another oversized focal point.
+Bottom-left card:
+Number tab reads “03”.
+Title reads “顶级团队”.
+Body reads “技术源于复旦×滨松联合实验室；985院长与3D测量科学家拓展技术边界，光刻、三星、量检测及ATE/EDA老兵完成产业化。”
+Use a simple flat icon combining a scientific lens and an engineering gear. Do not use portraits or university crests.
+Bottom-right card:
+Number tab reads “04”.
+Title reads “平台化复制”.
+Body reads “成熟设备提供现金流与客户入口，FS系列争夺下一代供应商名单；从单台设备销售走向多产品复购、质量控制装备平台与全球化复制。”
+Use a minimal platform icon showing one equipment node expanding into several connected nodes.
+Below the four cards, create one full-width pale-blue conclusion strip as the slide’s sole memory anchor. Place the exact progression in large, bold, centered type:
+“成熟设备进场 → 千万订单放量 → 首创3D卡位 → 全球化复制”
+Use deep navy for the first two stages and transition gradually into cyan-blue for the final two stages. Keep the arrow path flat, geometric and understated.
+At the bottom center, place the exact vision statement in bold deep navy:
+“从中国头部客户验证出发，成为全球第一的3D半导体质量控制装备平台。”
+Add a small low-contrast footnote along the bottom edge:
+“全球首创指FS606内部3D缺陷检测技术路线；FS系列仍处工程验证与交付推进阶段”
+Use only white, pale blue, deep navy and one cyan accent. Modern Chinese sans-serif typography, crisp vector geometry, flat icons, consistent card spacing and executive-level readability. Avoid photorealistic equipment, complex chip cutaways, gradients inside cards, glossy materials, floating layers, excessive technical terminology, decorative badges or multiple visual centers. Render every Chinese character, Latin abbreviation and number exactly as specified, with no translation, paraphrasing, spelling changes, invented logos or additional slogans.
+@Create image A premium 16:9 investor-pitch presentation slide, 3840×2160, full-bleed, designed in an Apple-keynote, McKinsey and Sequoia-capital visual language. Use a bright white-to-ice-blue background with a faint semiconductor engineering grid, subtle wafer-topography contours and restrained precision-circuit geometry occupying only the lower 25%. Place a small outlined brand placeholder at the top-left containing the exact Chinese text “卓谱微”; do not invent a real logo.
+
+Place the exact headline across the upper-left in large, extra-bold modern Chinese sans-serif type: “成熟设备已进场，全球首创3D方案开始卡位”. Keep “成熟设备已进场” in deep navy and highlight only “全球首创3D方案” in luminous cyan-blue.
+
+Directly beneath it, place the exact subtitle in medium-weight blue-gray type: “从EFA与探针卡千万订单出发，切入内部缺陷、3D形貌与膜厚检测，目标成为全球第一的3D半导体质量控制装备平台”.
+
+Build one dominant central visual metaphor: a large, premium, semi-transparent cutaway of a vertically stacked 3D semiconductor package, occupying approximately 45% of the slide. Render multiple dies, bonding interfaces, redistribution layers, micro-bumps, TSV/TGV-like vertical structures and thin-film layers with technically credible detail.
+
+On the left side of the chip, show three deep-navy engineering streams entering the package from miniature silhouettes of mature semiconductor equipment. Label them exactly “EFA失效分析”, “探针卡测试” and “电性能测试”. These streams represent verified customer access and commercialized capabilities.
+
+On the right side, show one precise cyan-blue volumetric scanning beam penetrating through the stacked chip. Inside the package, reveal several softly glowing buried defects: voids, cracks, delamination and bonding-interface anomalies. Add four minimal labels reading “空洞”, “裂纹”, “分层” and “键合界面”. The scanning beam must look like a credible semiconductor measurement system, not science-fiction energy.
+
+Above the chip, create one thin semi-transparent cyan layer floating lightly over the package, clearly presented as a future destination rather than a completed capability. Inside it, render the exact text “3D质量控制装备平台”. Below the chip, place the exact central statement in bold deep-navy type: “从成熟检测设备，走向3D质量控制装备平台”.
+
+Integrate one clean directional path beneath the central visual as the slide’s sole memory anchor. Use a single deep-navy-to-cyan gradient arrow carrying the exact text: “成熟设备进场 → 首创3D卡位 → 全球第一”. Make this path prominent but subordinate to the 3D chip itself.
+
+Arrange three compact evidence cards around the central chip, using thin borders, subtle shadows and strict alignment:
+
+Left evidence card, titled “时代与技术”, with the exact body text: “3D NAND、HBM、Chiplet把缺陷推入内部；FS606全球首创路线进入工程验证，FS V3推进形貌与膜厚工程交付”.
+
+Lower-left evidence card, titled “订单与落地”, with the exact body text: “EFA实现多套交付；探针卡首台Demo后释放6台、约1,000万元订单；2026H1合同额约2,800万—3,000万元”. Emphasize only “1台Demo → 6台订单” with slightly heavier type; do not create another oversized-number focal point.
+
+Lower-right evidence card, titled “团队与出身”, with the exact body text: “技术源于复旦×滨松联合实验室；985院长与3D测量科学家拓展边界，光刻、三星、量检测及ATE/EDA老兵完成产业化”.
+
+At the bottom center, place the exact closing statement in bold deep navy: “卓谱微不是在复制一台旧设备，而是以已经验证的设备交付能力，争夺3D半导体时代的新定义权。”
+
+Directly beneath it, place the exact vision line in cyan-blue medium-bold type: “从中国头部客户验证出发，成为全球第一的3D半导体质量控制装备平台。”
+
+Add a small low-contrast footnote along the bottom edge: “全球首创指FS606内部3D缺陷检测技术路线；FS系列仍处工程验证与交付推进阶段”.
+
+Use only white, ice blue, deep navy and one luminous cyan accent. Distinguish status visually: deep navy represents commercialized or verified capabilities; cyan represents engineering validation and future position. Use soft upper-left lighting, delicate shadows, restrained glassmorphism, abundant whitespace and crisp geometry. Avoid dark backgrounds, excessive glow, product-wall collages, portrait photos, decorative icons, four equal-weight highlight boxes or futuristic AI-brain imagery. Render every Chinese character, Latin abbreviation and number exactly as specified, with no translation, paraphrasing, spelling changes, invented logos or additional slogans.
